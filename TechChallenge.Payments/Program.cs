@@ -1,33 +1,48 @@
 using Azure.Messaging.EventHubs.Producer;
+using Microsoft.Azure.Functions.Worker.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using TechChallenge.Payments.Contracts;
 using TechChallenge.Payments.Services;
 
-var host = new HostBuilder()
-    .ConfigureFunctionsWebApplication() 
-    .ConfigureAppConfiguration(cfg =>
+var builder = FunctionsApplication.CreateBuilder(args);
+
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+    .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
+builder.Services.AddLogging();
+
+builder.Services.AddSingleton<EventHubProducerClient>(sp =>
+{
+    var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("EventHubs");
+    var cfg    = sp.GetRequiredService<IConfiguration>();
+
+    var conn = cfg["EVENT_HUB_CONNECTION"];
+    var hub  = cfg["PURCHASES_HUB_NAME"];
+
+    if (string.IsNullOrWhiteSpace(conn))
     {
-        cfg.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
-            .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
-            .AddEnvironmentVariables();
-    })
-    .ConfigureServices((ctx, services) =>
+        logger.LogError("EVENT_HUB_CONNECTION ausente; não criaremos EventHubProducerClient.");
+        return null!;
+    }
+    
+    if (conn.Contains("EntityPath=", StringComparison.OrdinalIgnoreCase))
+        return new EventHubProducerClient(conn);
+
+    if (string.IsNullOrWhiteSpace(hub))
     {
-        var cfg = ctx.Configuration;
+        logger.LogError("PURCHASES_HUB_NAME ausente e a connection não tem EntityPath.");
+        return null!;
+    }
 
-        // Mock gateway
-        services.AddSingleton<IPaymentGateway, PaymentGateway>();
+    return new EventHubProducerClient(conn, hub);
+});
 
-        // Event Hub Producer para publicar PaymentProcessed
-        var paymentsConnStr = cfg["EVENT_HUB_CONNECTION"]
-                              ?? throw new InvalidOperationException("EVENT_HUB_CONNECTION missing");
-        var paymentsHubName = cfg["PAYMENTS_HUB_NAME"]
-                              ?? throw new InvalidOperationException("PAYMENTS_HUB_NAME missing");
+builder.Services.AddSingleton<IPaymentGateway, PaymentGateway>();
 
-        services.AddSingleton(new EventHubProducerClient(paymentsConnStr, paymentsHubName));
-    })
-    .Build();
-
-await host.RunAsync();
+var host = builder.Build();
+host.Run();
