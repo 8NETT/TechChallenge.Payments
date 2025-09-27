@@ -57,8 +57,8 @@ jobs:
       - name: 2. Build and deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v1
         with:
-          resourceGroup: 'TechChallengePlan-Free'
-          containerAppName: 'techchallenge-payments-app'
+          resourceGroup: 'techchallenge-rg'
+          containerAppName: 'techchallenge-payments'
           imageToDeploy: 'docker.io/rm360749/fiap-pos-techchallenge-payments:latest'
       
       - name: 3. Logout da Azure
