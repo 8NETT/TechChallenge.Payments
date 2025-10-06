@@ -38,7 +38,7 @@ public class OrderPlacedHandlerTests
     public async Task DeveProcessarEventoComSucesso_QuandoGatewayAprovaPagamento()
     {
         // Arrange
-        var orderEvent = new OrderPlacedEvent { OrderId = 1, UserId = 123, JogoId = 456, Total = 100 };
+        var orderEvent = new OrderPlacedEvent { OrderId = 1, UserId = 123, JogoId = Guid.NewGuid(), Total = 100 };
         var paymentResult = PaymentResult.Approved("AUTH456");
         var eventData = CreateEventData(orderEvent, "OrderPlaced");
 
@@ -71,7 +71,7 @@ public class OrderPlacedHandlerTests
     public async Task DeveLancarExcecao_QuandoGatewayRetornaErro()
     {
         // Arrange
-        var orderEvent = new OrderPlacedEvent { OrderId = 1, UserId = 123, JogoId = 456, Total = 100 };
+        var orderEvent = new OrderPlacedEvent { OrderId = 1, UserId = 123, JogoId = Guid.NewGuid(), Total = 100 };
         var paymentResult = PaymentResult.Error("Gateway error");
         var eventData = CreateEventData(orderEvent, "OrderPlaced");
 
@@ -86,7 +86,7 @@ public class OrderPlacedHandlerTests
     public async Task DeveIgnorarEvento_QuandoJaProcessado()
     {
         // Arrange
-        var orderEvent = new OrderPlacedEvent { OrderId = 1, UserId = 123, JogoId = 456, Total = 100 };
+        var orderEvent = new OrderPlacedEvent { OrderId = 1, UserId = 123, JogoId = Guid.NewGuid(), Total = 100 };
         var paymentResult = PaymentResult.Approved("AUTH456");
         var eventData = CreateEventData(orderEvent, "OrderPlaced");
 
@@ -106,7 +106,7 @@ public class OrderPlacedHandlerTests
     public async Task DeveProcessarEventoComSucesso_QuandoPagamentoPendente()
     {
         // Arrange
-        var orderEvent = new OrderPlacedEvent { OrderId = 1, UserId = 123, JogoId = 456, Total = 100 };
+        var orderEvent = new OrderPlacedEvent { OrderId = 1, UserId = 123, JogoId = Guid.NewGuid(), Total = 100 };
         var paymentResult = PaymentResult.Pending("Awaiting confirmation");
         var eventData = CreateEventData(orderEvent, "OrderPlaced");
 
@@ -125,7 +125,7 @@ public class OrderPlacedHandlerTests
     public async Task DeveProcessarEventoComSucesso_QuandoPagamentoRecusado()
     {
         // Arrange
-        var orderEvent = new OrderPlacedEvent { OrderId = 1, UserId = 123, JogoId = 456, Total = 100 };
+        var orderEvent = new OrderPlacedEvent { OrderId = 1, UserId = 123, JogoId = Guid.NewGuid(), Total = 100 };
         var paymentResult = PaymentResult.Denied("Card declined");
         var eventData = CreateEventData(orderEvent, "OrderPlaced");
 
