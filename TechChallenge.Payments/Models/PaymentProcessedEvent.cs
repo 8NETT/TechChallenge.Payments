@@ -6,7 +6,7 @@ public sealed class PaymentProcessedEvent
 {
     public int OrderId { get; init; }
     public int UserId { get; init; }
-    public int JogoId { get; init; }
+    public Guid JogoId { get; init; }
     public decimal Amount { get; init; }
     public PaymentStatus Status { get; init; }
     public string? AuthorizationCode { get; init; }
