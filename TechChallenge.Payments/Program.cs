@@ -25,19 +25,13 @@ builder.Services.AddSingleton<EventHubProducerClient>(sp =>
     var hub  = cfg["PURCHASES_HUB_NAME"];
 
     if (string.IsNullOrWhiteSpace(conn))
-    {
-        logger.LogError("EVENT_HUB_CONNECTION ausente; não criaremos EventHubProducerClient.");
-        return null!;
-    }
-    
+        throw new InvalidOperationException("EVENT_HUB_CONNECTION is not configured.");
+
     if (conn.Contains("EntityPath=", StringComparison.OrdinalIgnoreCase))
         return new EventHubProducerClient(conn);
 
     if (string.IsNullOrWhiteSpace(hub))
-    {
-        logger.LogError("PURCHASES_HUB_NAME ausente e a connection não tem EntityPath.");
-        return null!;
-    }
+        throw new InvalidOperationException("PURCHASES_HUB_NAME is missing and the connection has no EntityPath.");
 
     return new EventHubProducerClient(conn, hub);
 });
