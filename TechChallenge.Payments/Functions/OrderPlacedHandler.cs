@@ -26,6 +26,7 @@ public sealed class OrderPlacedHandler(
     {
         foreach (var ed in events)
         {
+            if (ed is null) continue;
             try
             {
                 var json = Encoding.UTF8.GetString(ed.EventBody);
@@ -33,22 +34,16 @@ public sealed class OrderPlacedHandler(
 
                 if (!string.Equals(type, "OrderPlaced", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (!TryDeserialize(json, out Envelope<OrderPlacedEvent>? env))
-                    {
-                        logger.LogWarning("Mensagem ignorada: tipo desconhecido. body={Body}", json);
-                        continue;
-                    }
-                    await HandleAsync(env.Data, ct);
+                    logger.LogWarning("Mensagem ignorada: tipo desconhecido. body={Body}", json);
+                    continue;
                 }
-                else
+
+                if (!TryDeserialize(json, out Envelope<OrderPlacedEvent>? env))
                 {
-                    if (!TryDeserialize(json, out Envelope<OrderPlacedEvent>? env))
-                    {
-                        logger.LogWarning("Envelope inválido para OrderPlaced. body={Body}", json);
-                        continue;
-                    }
-                    await HandleAsync(env.Data, ct);
+                    logger.LogWarning("Envelope inválido para OrderPlaced. body={Body}", json);
+                    continue;
                 }
+                await HandleAsync(env.Data, ct);
             }
             catch (Exception ex)
             {
@@ -63,6 +58,11 @@ public sealed class OrderPlacedHandler(
         if (!_processed.Add(evt.OrderId)) return;
 
         var result = await gateway.ChargeAsync(evt, ct);
+
+        if (result.Status == TechChallenge.Payments.Enum.PaymentStatus.Error)
+        {
+            throw new Exception($"Gateway error for order {evt.OrderId}: {result.Message}");
+        }
 
         var payment = new PaymentProcessedEvent
         {
