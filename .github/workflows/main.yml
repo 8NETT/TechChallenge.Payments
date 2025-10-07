@@ -23,9 +23,8 @@ jobs:
       - name: 3. Restaurar dependências NuGet
         run: dotnet restore "TechChallenge.Payments.sln"
 
-      # incluir após testes
-      #- name: 4. Executar todos os testes (Core, Application, WebApi)
-      #  run: dotnet test "TechChallenge.Payments.sln" --no-restore --verbosity normal
+      - name: 4. Executar todos os testes
+        run: dotnet test "TechChallenge.Payments.sln" --no-restore --verbosity normal
 
       - name: 5. Login no Docker Hub
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -39,6 +38,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           push: true
           tags: rm360749/fiap-pos-techchallenge-payments:latest
 
@@ -54,12 +54,12 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: 2. Build and deploy to Azure Container Apps
+      - name: 2. Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v1
         with:
-          resourceGroup: 'techchallenge-rg'
-          containerAppName: 'techchallenge-payments'
-          imageToDeploy: 'docker.io/rm360749/fiap-pos-techchallenge-payments:latest'
+          resourceGroup: techchallenge-rg
+          containerAppName: techchallenge-payments
+          imageToDeploy: docker.io/rm360749/fiap-pos-techchallenge-payments:latest
       
       - name: 3. Logout da Azure
         run: az logout

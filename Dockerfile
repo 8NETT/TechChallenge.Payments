@@ -1,41 +1,36 @@
+# Build stage
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-WORKDIR /app
+WORKDIR /src
 
-# Copiar arquivos de projeto e restaurar dependencias
+# Copy solution and restore
 COPY ["TechChallenge.Payments.sln", "./"]
 COPY ["TechChallenge.Payments/TechChallenge.Payments.csproj", "TechChallenge.Payments/"]
 COPY ["TechChallenge.Payments.Tests/TechChallenge.Payments.Tests.csproj", "TechChallenge.Payments.Tests/"]
 RUN dotnet restore "TechChallenge.Payments.sln"
 
-# Copiar o restante dos arquivos
+# Copy everything and build
 COPY . .
-
-# Executar testes
 RUN dotnet test "TechChallenge.Payments.sln" --no-restore --verbosity normal
-
-# Publicar a aplicacao
-FROM build AS publish
 RUN dotnet publish "TechChallenge.Payments/TechChallenge.Payments.csproj" -c Release -o /app/publish
 
-# Imagem final
-FROM mcr.microsoft.com/dotnet/aspnet:9.0
+# Final runtime image: use Azure Functions isolated worker base image
+FROM mcr.microsoft.com/azure-functions/dotnet-isolated:4-dotnet-isolated9.0 AS final
 
-# Instalar o agente do New Relic (opcional, mantido do original)
+# (Optional) install New Relic agent if you still need it
 RUN apt-get update && apt-get install -y wget ca-certificates gnupg \
-&& echo 'deb http://apt.newrelic.com/debian/ newrelic non-free' | tee /etc/apt/sources.list.d/newrelic.list \
-&& wget https://download.newrelic.com/548C16BF.gpg \
-&& apt-key add 548C16BF.gpg \
-&& apt-get update \
-&& apt-get install -y 'newrelic-dotnet-agent' \
-&& rm -rf /var/lib/apt/lists/*
+    && echo 'deb http://apt.newrelic.com/debian/ newrelic non-free' | tee /etc/apt/sources.list.d/newrelic.list \
+    && wget https://download.newrelic.com/548C16BF.gpg \
+    && apt-key add 548C16BF.gpg \
+    && apt-get update \
+    && apt-get install -y 'newrelic-dotnet-agent' \
+    && rm -rf /var/lib/apt/lists/*
 
-# Habilitar o agente do New Relic
+# New Relic env vars (optional)
 ENV CORECLR_ENABLE_PROFILING=1 \
     CORECLR_PROFILER={36032161-FFC0-4B61-B559-F6C5D41BAE5A} \
     CORECLR_NEWRELIC_HOME=/usr/local/newrelic-dotnet-agent \
     CORECLR_PROFILER_PATH=/usr/local/newrelic-dotnet-agent/libNewRelicProfiler.so
 
-WORKDIR /app
-COPY --from=publish /app/publish .
-
-ENTRYPOINT ["dotnet", "TechChallenge.Payments.dll"]
+# Copy publish output
+WORKDIR /home/site/wwwroot
+COPY --from=build /app/publish .
