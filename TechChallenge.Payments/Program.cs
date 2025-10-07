@@ -14,7 +14,10 @@ builder.Configuration
     .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables();
 
+
 builder.Services.AddLogging();
+
+builder.Services.AddOpenTelemetry();
 
 builder.Services.AddSingleton<EventHubProducerClient>(sp =>
 {
