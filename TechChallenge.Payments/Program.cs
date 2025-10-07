@@ -18,7 +18,6 @@ builder.Services.AddLogging();
 
 builder.Services.AddSingleton<EventHubProducerClient>(sp =>
 {
-    var logger = sp.GetRequiredService<ILoggerFactory>().CreateLogger("EventHubs");
     var cfg    = sp.GetRequiredService<IConfiguration>();
 
     var conn = cfg["EVENT_HUB_CONNECTION"];
